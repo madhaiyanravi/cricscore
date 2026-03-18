@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CricScore – Offline</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d1117;
+      color: #fff;
+      font-family: system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+    .icon { font-size: 4rem; margin-bottom: 1.5rem; }
+    h1 { font-size: 1.8rem; margin-bottom: 0.75rem; }
+    p  { color: #8b949e; font-size: 0.95rem; line-height: 1.6; max-width: 320px; }
+    .btn {
+      margin-top: 2rem;
+      background: #1a7a3c;
+      color: #fff;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="icon">🏏</div>
+  <h1>You're Offline</h1>
+  <p>CricScore needs a connection to sync live scores. Check your network and try again.</p>
+  <button class="btn" onclick="window.location.reload()">Retry</button>
+</body>
+</html>

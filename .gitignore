@@ -1,0 +1,12 @@
+﻿node_modules/
+.next/
+.env.local
+.env
+target/
+*.jar
+*.class
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml

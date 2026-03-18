@@ -1,0 +1,45 @@
+{
+  "name": "CricScore – Live Cricket Scorer",
+  "short_name": "CricScore",
+  "description": "Ball-by-ball cricket scoring on your phone",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1117",
+  "theme_color": "#1a7a3c",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/scoring.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "categories": ["sports", "utilities"],
+  "shortcuts": [
+    {
+      "name": "New Match",
+      "url": "/match/create",
+      "description": "Start scoring a new match"
+    },
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "View all matches"
+    }
+  ]
+}

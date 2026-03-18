@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pitch-green: #1a7a3c;
+  --pitch-dark: #0f2d1a;
+  --boundary: #f59e0b;
+  --wicket: #ef4444;
+  --surface: #161b22;
+  --surface-2: #1c2330;
+  --border: #30363d;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  body {
+    background: #0d1117;
+    background-image:
+      radial-gradient(ellipse 80% 40% at 50% -10%, rgba(26,122,60,0.15) 0%, transparent 60%);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-[#161b22] border border-[#30363d] rounded-xl;
+  }
+
+  .btn-primary {
+    @apply bg-[#1a7a3c] hover:bg-[#2aad56] text-white font-semibold
+           px-5 py-2.5 rounded-lg transition-all duration-150
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-[#1c2330] hover:bg-[#252d3d] text-white border border-[#30363d]
+           font-semibold px-5 py-2.5 rounded-lg transition-all duration-150;
+  }
+
+  .btn-danger {
+    @apply bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-600/30
+           font-semibold px-5 py-2.5 rounded-lg transition-all duration-150;
+  }
+
+  .input {
+    @apply w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3
+           text-white placeholder-gray-500 focus:outline-none
+           focus:border-[#1a7a3c] focus:ring-1 focus:ring-[#1a7a3c]
+           transition-colors duration-150;
+  }
+
+  .ball-dot {
+    @apply w-9 h-9 rounded-full flex items-center justify-center
+           text-xs font-bold border border-[#30363d] font-display;
+  }
+}
+
+/* Animated score number */
+@keyframes scorePop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+.score-pop { animation: scorePop 0.3s ease; }
