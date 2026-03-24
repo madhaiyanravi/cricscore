@@ -42,8 +42,28 @@ CREATE TABLE IF NOT EXISTS matches (
     team_b_id    BIGINT NOT NULL REFERENCES teams(id),
     total_overs  INT    NOT NULL,
     status       VARCHAR(20) NOT NULL DEFAULT 'IN_PROGRESS',
+    toss_winner_team_id BIGINT REFERENCES teams(id),
+    toss_decision       VARCHAR(10), -- BAT, BOWL
+    winner_team_id      BIGINT REFERENCES teams(id),
+    result_text         VARCHAR(200),
     created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
     venue        VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS innings (
+    id                BIGSERIAL PRIMARY KEY,
+    match_id          BIGINT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    innings_number    INT    NOT NULL, -- 1 or 2
+    batting_team_id   BIGINT NOT NULL REFERENCES teams(id),
+    bowling_team_id   BIGINT NOT NULL REFERENCES teams(id),
+    runs              INT NOT NULL DEFAULT 0,
+    wickets           INT NOT NULL DEFAULT 0,
+    balls_bowled      INT NOT NULL DEFAULT 0, -- legal deliveries only
+    striker_id        BIGINT REFERENCES players(id),
+    non_striker_id    BIGINT REFERENCES players(id),
+    current_bowler_id BIGINT REFERENCES players(id),
+    target_runs       INT,
+    status            VARCHAR(20) NOT NULL DEFAULT 'IN_PROGRESS'
 );
 
 CREATE TABLE IF NOT EXISTS scores (
@@ -59,11 +79,17 @@ CREATE TABLE IF NOT EXISTS scores (
 CREATE TABLE IF NOT EXISTS balls (
     id          BIGSERIAL PRIMARY KEY,
     match_id    BIGINT  NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    innings_number INT  NOT NULL DEFAULT 1,
     over_number INT     NOT NULL,
     ball_number INT     NOT NULL,
     runs        INT     NOT NULL DEFAULT 0,
-    extra_type  VARCHAR(10),        -- WIDE, NO_BALL, null
+    bat_runs    INT     NOT NULL DEFAULT 0,
+    extra_runs  INT     NOT NULL DEFAULT 0,
+    extra_type  VARCHAR(20),        -- WIDE, NO_BALL, BYE, LEG_BYE, PENALTY, null
     is_wicket   BOOLEAN NOT NULL DEFAULT FALSE,
+    wicket_type VARCHAR(20),        -- BOWLED, CAUGHT, RUN_OUT, STUMPED, LBW
+    wicket_batsman_id BIGINT REFERENCES players(id),
+    fielder_id  BIGINT REFERENCES players(id),
     batsman_id  BIGINT  REFERENCES players(id),
     bowler_id   BIGINT  REFERENCES players(id)
 );
@@ -85,6 +111,8 @@ CREATE TABLE IF NOT EXISTS match_analytics (
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_balls_match_id     ON balls(match_id);
+CREATE INDEX IF NOT EXISTS idx_innings_match_id   ON innings(match_id);
+CREATE INDEX IF NOT EXISTS idx_innings_match_inn  ON innings(match_id, innings_number);
 CREATE INDEX IF NOT EXISTS idx_players_team_id    ON players(team_id);
 CREATE INDEX IF NOT EXISTS idx_scores_match_id    ON scores(match_id);
 CREATE INDEX IF NOT EXISTS idx_balls_batsman_id   ON balls(batsman_id);

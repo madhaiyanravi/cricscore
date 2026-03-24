@@ -14,6 +14,8 @@ function CreateMatchPage() {
   const [teamAId, setTeamAId] = useState('');
   const [teamBId, setTeamBId] = useState('');
   const [totalOvers, setTotalOvers] = useState(10);
+  const [tossWinnerTeamId, setTossWinnerTeamId] = useState('');
+  const [tossDecision, setTossDecision] = useState<'BAT' | 'BOWL'>('BAT');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,9 +30,19 @@ function CreateMatchPage() {
       setError('Team A and Team B must be different.');
       return;
     }
+    if (tossWinnerTeamId && tossWinnerTeamId !== teamAId && tossWinnerTeamId !== teamBId) {
+      setError('Toss winner must be Team A or Team B.');
+      return;
+    }
     setLoading(true);
     try {
-      const { data } = await matchesApi.create(Number(teamAId), Number(teamBId), totalOvers);
+      const { data } = await matchesApi.create({
+        teamAId: Number(teamAId),
+        teamBId: Number(teamBId),
+        totalOvers,
+        tossWinnerTeamId: tossWinnerTeamId ? Number(tossWinnerTeamId) : null,
+        tossDecision: tossWinnerTeamId ? tossDecision : null,
+      });
       router.push(`/match/${data.id}`);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create match');
@@ -66,7 +78,7 @@ function CreateMatchPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
-                  Team A (Batting)
+                  Team A
                 </label>
                 <select
                   value={teamAId}
@@ -82,7 +94,7 @@ function CreateMatchPage() {
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
-                  Team B (Bowling)
+                  Team B
                 </label>
                 <select
                   value={teamBId}
@@ -129,6 +141,54 @@ function CreateMatchPage() {
             </div>
             <p className="text-xs text-gray-500 mt-3">Selected: {totalOvers} overs ({totalOvers * 6} balls)</p>
           </div>
+
+          {/* Toss */}
+          {teamA && teamB && (
+            <div className="card p-6 space-y-4">
+              <h2 className="font-display text-xl font-semibold">Toss</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
+                    Toss Winner
+                  </label>
+                  <select
+                    value={tossWinnerTeamId}
+                    onChange={(e) => setTossWinnerTeamId(e.target.value)}
+                    className="input"
+                  >
+                    <option value="">Skip (default Team A bats)</option>
+                    <option value={teamA.id}>{teamA.name}</option>
+                    <option value={teamB.id}>{teamB.name}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
+                    Decision
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['BAT', 'BOWL'] as const).map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setTossDecision(d)}
+                        disabled={!tossWinnerTeamId}
+                        className={`py-3 rounded-lg border font-display text-lg font-bold transition-all disabled:opacity-40 ${
+                          tossDecision === d
+                            ? 'bg-[#1a7a3c] border-[#2aad56] text-white'
+                            : 'bg-[#0d1117] border-[#30363d] text-gray-400 hover:border-[#1a7a3c] hover:text-white'
+                        }`}
+                      >
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    If skipped, match starts with Team A batting.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">

@@ -25,12 +25,26 @@ public class Ball {
     private Integer ballNumber;
 
     @Column(nullable = false)
-    private Integer runs = 0;
+    private Integer runs = 0; // total runs for this delivery/event
 
-    private String  extraType;    // WIDE, NO_BALL, null
+    @Column(nullable = false)
+    private Integer inningsNumber = 1;
+
+    @Column(nullable = false)
+    private Integer batRuns = 0;
+
+    @Column(nullable = false)
+    private Integer extraRuns = 0;
+
+    private String  extraType;    // WIDE, NO_BALL, BYE, LEG_BYE, PENALTY, null
     private Boolean isWicket = false;
 
     // For player profile stats & analytics
     private Long batsmanId;
     private Long bowlerId;
+
+    // Wicket details (optional)
+    private String wicketType;      // BOWLED, CAUGHT, RUN_OUT, STUMPED, LBW
+    private Long wicketBatsmanId;   // can differ from batsmanId for run-out
+    private Long fielderId;
 }

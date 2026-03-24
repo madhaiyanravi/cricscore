@@ -7,6 +7,12 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// No-auth API client (for spectator views)
+const publicApi = axios.create({
+  baseURL: API_URL,
+  headers: { 'Content-Type': 'application/json' },
+});
+
 // Attach JWT to every request
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
@@ -49,23 +55,42 @@ export const teamsApi = {
 
 // ── Matches ───────────────────────────────────────────────────────────────────
 export const matchesApi = {
-  create: (teamAId: number, teamBId: number, totalOvers: number) =>
-    api.post('/matches', { teamAId, teamBId, totalOvers }),
+  create: (body: {
+    teamAId: number;
+    teamBId: number;
+    totalOvers: number;
+    tossWinnerTeamId?: number | null;
+    tossDecision?: 'BAT' | 'BOWL' | null;
+  }) => api.post('/matches', body),
   getAll: () => api.get('/matches'),
   getOne: (id: number) => api.get(`/matches/${id}`),
+  startSecondInnings: (id: number) => api.post(`/matches/${id}/innings/2/start`),
+  spectateToken: (id: number) => api.post(`/matches/${id}/spectate-token`),
 };
 
 // ── Score ─────────────────────────────────────────────────────────────────────
 export const scoreApi = {
   recordBall: (payload: {
     matchId: number;
-    runs: number;
+    batRuns?: number;
+    extraRuns?: number;
     extraType?: string | null;
     isWicket: boolean;
-    currentBatsman?: string;
+    batsmanId?: number;
+    nonStrikerId?: number;
+    bowlerId?: number;
+    wicketType?: string | null;
+    wicketBatsmanId?: number | null;
+    fielderId?: number | null;
+    newBatsmanId?: number | null;
   }) => api.post('/score/ball', payload),
   getScore: (matchId: number) => api.get(`/score/${matchId}`),
   undoBall:  (matchId: number) => api.delete(`/score/ball/last/${matchId}`),
+};
+
+export const publicScoreApi = {
+  getScore: (matchId: number, token: string) =>
+    publicApi.get(`/public/score/${matchId}`, { params: { t: token } }),
 };
 
 // ── Players ───────────────────────────────────────────────────────────────────

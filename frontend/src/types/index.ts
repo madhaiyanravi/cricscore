@@ -22,8 +22,34 @@ export interface BallResult {
   overNumber: number;
   ballNumber: number;
   runs: number;
+  batRuns?: number;
+  extraRuns?: number;
   extraType: string | null;
   isWicket: boolean;
+  wicketType?: string | null;
+  wicketBatsmanId?: number | null;
+  fielderId?: number | null;
+}
+
+export interface BatterLine {
+  playerId: number;
+  name: string;
+  runs: number;
+  balls: number;
+  fours: number;
+  sixes: number;
+  out: boolean;
+  dismissal?: string;
+}
+
+export interface BowlerLine {
+  playerId: number;
+  name: string;
+  overs: string;
+  maidens: number;
+  runs: number;
+  wickets: number;
+  economy: number;
 }
 
 export interface ScoreData {
@@ -31,12 +57,29 @@ export interface ScoreData {
   teamAName: string;
   teamBName: string;
   totalOvers: number;
+  inningsNumber: number;
+  battingTeamId: number;
+  battingTeamName: string;
+  bowlingTeamId: number;
+  bowlingTeamName: string;
   runs: number;
   wickets: number;
   overs: string;
-  currentBatsman: string | null;
+  strikerId?: number | null;
+  strikerName?: string | null;
+  nonStrikerId?: number | null;
+  nonStrikerName?: string | null;
+  currentBowlerId?: number | null;
+  currentBowlerName?: string | null;
+  targetRuns?: number | null;
+  requiredRuns?: number | null;
+  remainingBalls?: number | null;
+  resultText?: string | null;
   status: 'IN_PROGRESS' | 'COMPLETED';
   lastSixBalls: BallResult[];
+  battingCard?: BatterLine[];
+  bowlingCard?: BowlerLine[];
+  overEnded?: boolean;
 }
 
 export interface PlayerProfile {

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.Map;
 
 @Component
 public class JwtUtil {
@@ -28,6 +29,34 @@ public class JwtUtil {
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public String generateSpectatorToken(Long matchId) {
+        return Jwts.builder()
+                .setSubject("spectator")
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .addClaims(Map.of("scope", "SPECTATE", "matchId", matchId))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public boolean validateSpectatorToken(String token, Long matchId) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            Object scope = claims.get("scope");
+            Object mid = claims.get("matchId");
+            if (scope == null || !"SPECTATE".equals(String.valueOf(scope))) return false;
+            if (mid == null) return false;
+            Long tokenMatchId = Long.valueOf(String.valueOf(mid));
+            return tokenMatchId.equals(matchId);
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 
     public String extractEmail(String token) {

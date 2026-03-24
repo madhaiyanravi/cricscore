@@ -27,4 +27,13 @@ public class Match {
 
     @Column(nullable = false)
     private String status = "IN_PROGRESS"; // IN_PROGRESS, COMPLETED
+
+    // Toss (optional but required for 2-innings flow)
+    private Long tossWinnerTeamId; // teamA/teamB id
+    private String tossDecision;   // BAT, BOWL
+
+    // Result
+    private Long winnerTeamId;
+    @Column(length = 200)
+    private String resultText;
 }

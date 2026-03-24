@@ -1,6 +1,7 @@
 package com.cricket.controller;
 
 import com.cricket.dto.MatchDto;
+import com.cricket.security.JwtUtil;
 import com.cricket.service.MatchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import java.util.List;
 public class MatchController {
 
     private final MatchService matchService;
+    private final JwtUtil jwtUtil;
 
     @PostMapping("/matches")
     public ResponseEntity<MatchDto.MatchResponse> createMatch(@RequestBody MatchDto.CreateMatchRequest request) {
@@ -27,6 +29,18 @@ public class MatchController {
     @GetMapping("/matches/{id}")
     public ResponseEntity<MatchDto.MatchResponse> getMatch(@PathVariable Long id) {
         return ResponseEntity.ok(matchService.getMatch(id));
+    }
+
+    @PostMapping("/matches/{id}/innings/2/start")
+    public ResponseEntity<MatchDto.ScoreResponse> startSecondInnings(@PathVariable Long id) {
+        return ResponseEntity.ok(matchService.startSecondInnings(id));
+    }
+
+    @PostMapping("/matches/{id}/spectate-token")
+    public ResponseEntity<MatchDto.SpectateTokenResponse> createSpectateToken(@PathVariable Long id) {
+        MatchDto.SpectateTokenResponse resp = new MatchDto.SpectateTokenResponse();
+        resp.setToken(jwtUtil.generateSpectatorToken(id));
+        return ResponseEntity.ok(resp);
     }
 
     @DeleteMapping("/score/ball/last/{matchId}")
