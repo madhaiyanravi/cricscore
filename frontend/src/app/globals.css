@@ -3,27 +3,47 @@
 @tailwind utilities;
 
 :root {
-  --pitch-green: #1a7a3c;
-  --pitch-dark: #0f2d1a;
-  --boundary: #f59e0b;
-  --wicket: #ef4444;
-  --surface: #161b22;
-  --surface-2: #1c2330;
-  --border: #30363d;
+  --bg: 13 17 23;
+  --card: 22 27 34;
+  --border: 48 54 61;
+  --text: 201 209 217;
+  --muted: 139 148 158;
+  --primary: 26 122 60;
+  --primary-foreground: 255 255 255;
+  --primary-hover: 42 173 86;
+  --danger: 239 68 68;
+  --success: 34 197 94;
+  --warning: 245 158 11;
+  --radius: 0.75rem;
+}
+
+[data-theme="clean_light"] {
+  --bg: 248 250 252;
+  --card: 255 255 255;
+  --border: 226 232 240;
+  --text: 15 23 42;
+  --muted: 100 116 139;
+  --primary: 26 122 60;
+  --primary-foreground: 255 255 255;
+  --primary-hover: 21 101 52;
+  --danger: 220 38 38;
+  --success: 22 163 74;
+  --warning: 202 138 4;
 }
 
 @layer base {
-  * { box-sizing: border-box; }
-
-  body {
-    background: #0d1117;
-    background-image:
-      radial-gradient(ellipse 80% 40% at 50% -10%, rgba(26,122,60,0.15) 0%, transparent 60%);
+  * { 
+    @apply border-[rgb(var(--border))];
+    box-sizing: border-box; 
   }
 
-  h1, h2, h3 {
-    font-family: var(--font-display);
-    letter-spacing: 0.02em;
+  body {
+    @apply bg-[rgb(var(--bg))] text-[rgb(var(--text))] font-sans subpixel-antialiased transition-colors duration-200;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
   }
 }
 

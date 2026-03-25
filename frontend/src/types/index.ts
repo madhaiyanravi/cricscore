@@ -7,6 +7,7 @@ export interface Team {
 export interface Player {
   id: number;
   name: string;
+  role?: string;
 }
 
 export interface Match {

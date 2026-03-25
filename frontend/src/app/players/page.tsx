@@ -1,31 +1,42 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import withAuth from '@/components/withAuth';
 import { playersApi } from '@/lib/api';
 import { PlayerProfile } from '@/types';
+import { cn } from '@/lib/utils';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import Input from '@/components/ui/Input';
+import Skeleton from '@/components/ui/Skeleton';
 
-const ROLE_COLORS: Record<string, string> = {
-  BATSMAN:        'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  BOWLER:         'bg-green-500/20 text-green-300 border-green-500/30',
-  ALL_ROUNDER:    'bg-purple-500/20 text-purple-300 border-purple-500/30',
-  WICKET_KEEPER:  'bg-amber-500/20 text-amber-300 border-amber-500/30',
+const ROLE_ICONS: Record<string, string> = {
+  BATSMAN: '🏏',
+  BOWLER: '🎳',
+  ALL_ROUNDER: '⚡',
+  WICKET_KEEPER: '🧤',
 };
 
-const ROLE_ICON: Record<string, string> = {
-  BATSMAN: '🏏', BOWLER: '🎳', ALL_ROUNDER: '⚡', WICKET_KEEPER: '🧤',
+const ROLE_VARIANTS: Record<string, any> = {
+  BATSMAN: 'primary',
+  BOWLER: 'success',
+  ALL_ROUNDER: 'warning',
+  WICKET_KEEPER: 'danger',
 };
 
 function PlayersPage() {
-  const [players, setPlayers]   = useState<PlayerProfile[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [search, setSearch]     = useState('');
+  const [players, setPlayers] = useState<PlayerProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
 
   useEffect(() => {
     playersApi.getAll()
       .then(({ data }) => setPlayers(data))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -33,169 +44,206 @@ function PlayersPage() {
 
   const filtered = players.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    const matchRole   = roleFilter === 'ALL' || p.role === roleFilter;
+    const matchRole = roleFilter === 'ALL' || p.role === roleFilter;
     return matchSearch && matchRole;
   });
 
-  // Leaderboard by runs
-  const topRunners  = [...players].sort((a, b) => b.totalRuns - a.totalRuns).slice(0, 3);
-  const topWickets  = [...players].sort((a, b) => b.totalWickets - a.totalWickets).slice(0, 3);
+  const topRunners = [...players].sort((a, b) => b.totalRuns - a.totalRuns).slice(0, 3);
+  const topWickets = [...players].sort((a, b) => b.totalWickets - a.totalWickets).slice(0, 3);
 
   return (
-    <>
+    <div className="min-h-screen bg-background text-text transition-colors duration-200">
       <Navbar />
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-
+      <main className="max-w-6xl mx-auto px-4 py-12 space-y-12">
         {/* Header */}
-        <div>
-          <h1 className="font-display text-4xl font-bold text-white">Players</h1>
-          <p className="text-gray-400 text-sm mt-1">Career stats and profiles</p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-2">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Players & Statistics</h1>
+            <p className="text-muted text-lg">Comprehensive career profiles and performance tracks.</p>
+          </div>
         </div>
 
-        {/* Mini leaderboards */}
+        {/* Leaderboards */}
         {!loading && players.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Top run-scorers */}
-            <div className="card p-5">
-              <h2 className="font-display text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                🏏 <span>Top Run-Scorers</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Top Run Scorers */}
+            <Card className="p-6">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-3">
+                <span className="p-2 bg-primary/10 rounded-lg text-primary text-2xl">🏏</span>
+                Top Run-Scorers
               </h2>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {topRunners.map((p, i) => (
-                  <Link key={p.id} href={`/players/${p.id}`}
-                    className="flex items-center justify-between hover:bg-[#1c2330] px-3 py-2 rounded-lg transition-colors">
-                    <div className="flex items-center gap-3">
-                      <span className={`font-display text-lg font-bold w-6 text-center ${
-                        i === 0 ? 'text-amber-400' : i === 1 ? 'text-gray-400' : 'text-amber-700'
-                      }`}>{i + 1}</span>
-                      <div className="w-8 h-8 rounded-full bg-[#1a7a3c]/30 flex items-center justify-center text-sm font-bold text-[#2aad56]">
-                        {p.name.charAt(0)}
+                  <Link key={p.id} href={`/players/${p.id}`} className="group">
+                    <div className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/5 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <span className={cn(
+                          "text-xl font-black w-8 text-center",
+                          i === 0 ? "text-yellow-500" : i === 1 ? "text-slate-400" : "text-amber-600"
+                        )}>
+                          #{i + 1}
+                        </span>
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                          {p.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-bold group-hover:text-primary transition-colors">{p.name}</p>
+                          <p className="text-[10px] text-muted uppercase font-bold tracking-widest leading-none">
+                            {p.role?.replace('_', ' ')}
+                          </p>
+                        </div>
                       </div>
-                      <span className="text-sm font-medium text-white">{p.name}</span>
+                      <div className="text-right">
+                        <span className="text-2xl font-black text-primary">{p.totalRuns}</span>
+                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest leading-none mt-1">Runs</p>
+                      </div>
                     </div>
-                    <span className="font-display text-xl font-bold text-[#2aad56]">{p.totalRuns}</span>
                   </Link>
                 ))}
-                {topRunners.length === 0 && <p className="text-gray-500 text-sm text-center py-2">No data yet</p>}
               </div>
-            </div>
+            </Card>
 
-            {/* Top wicket-takers */}
-            <div className="card p-5">
-              <h2 className="font-display text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                🎳 <span>Top Wicket-Takers</span>
+            {/* Top Wicket Takers */}
+            <Card className="p-6">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-3">
+                <span className="p-2 bg-success/10 rounded-lg text-success text-2xl">🎳</span>
+                Top Wicket-Takers
               </h2>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {topWickets.map((p, i) => (
-                  <Link key={p.id} href={`/players/${p.id}`}
-                    className="flex items-center justify-between hover:bg-[#1c2330] px-3 py-2 rounded-lg transition-colors">
-                    <div className="flex items-center gap-3">
-                      <span className={`font-display text-lg font-bold w-6 text-center ${
-                        i === 0 ? 'text-amber-400' : i === 1 ? 'text-gray-400' : 'text-amber-700'
-                      }`}>{i + 1}</span>
-                      <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-sm font-bold text-red-400">
-                        {p.name.charAt(0)}
+                  <Link key={p.id} href={`/players/${p.id}`} className="group">
+                    <div className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/5 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <span className={cn(
+                          "text-xl font-black w-8 text-center",
+                          i === 0 ? "text-yellow-500" : i === 1 ? "text-slate-400" : "text-amber-600"
+                        )}>
+                          #{i + 1}
+                        </span>
+                        <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center font-bold text-success">
+                          {p.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-bold group-hover:text-success transition-colors">{p.name}</p>
+                          <p className="text-[10px] text-muted uppercase font-bold tracking-widest leading-none">
+                            {p.role?.replace('_', ' ')}
+                          </p>
+                        </div>
                       </div>
-                      <span className="text-sm font-medium text-white">{p.name}</span>
+                      <div className="text-right">
+                        <span className="text-2xl font-black text-success">{p.totalWickets}</span>
+                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest leading-none mt-1">Wickets</p>
+                      </div>
                     </div>
-                    <span className="font-display text-xl font-bold text-red-400">{p.totalWickets}W</span>
                   </Link>
                 ))}
-                {topWickets.length === 0 && <p className="text-gray-500 text-sm text-center py-2">No data yet</p>}
               </div>
-            </div>
+            </Card>
           </div>
         )}
 
-        {/* Search + Filter */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
+        {/* Search & Filters */}
+        <div className="flex flex-col md:flex-row gap-4">
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search players…"
-            className="input flex-1"
+            placeholder="Search by player name..."
+            className="flex-1"
           />
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar scroll-smooth">
             {roles.map(r => (
-              <button key={r} onClick={() => setRoleFilter(r)}
-                className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap border transition-colors ${
-                  roleFilter === r
-                    ? 'bg-[#1a7a3c] border-[#2aad56] text-white'
-                    : 'bg-[#0d1117] border-[#30363d] text-gray-400 hover:border-[#1a7a3c]'
-                }`}>
-                {r === 'ALL' ? 'All' : r.replace('_', ' ')}
-              </button>
+              <Button
+                key={r}
+                variant={roleFilter === r ? 'primary' : 'secondary'}
+                onClick={() => setRoleFilter(r)}
+                size="sm"
+                className="whitespace-nowrap rounded-full px-4"
+              >
+                {r === 'ALL' ? 'All Roles' : r.replace('_', ' ')}
+              </Button>
             ))}
           </div>
         </div>
 
-        {/* Player grid */}
-        {loading ? (
-          <div className="text-center py-16 text-gray-500 animate-pulse">Loading players…</div>
-        ) : filtered.length === 0 ? (
-          <div className="card p-10 text-center text-gray-500">
-            {search || roleFilter !== 'ALL' ? 'No players match your filter.' : 'No players yet — add them via Teams.'}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(p => (
-              <Link key={p.id} href={`/players/${p.id}`}>
-                <div className="card p-5 hover:border-[#1a7a3c] transition-colors cursor-pointer group h-full">
-                  {/* Avatar + Name */}
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-[#1a7a3c]/20 flex items-center justify-center text-xl flex-shrink-0 group-hover:bg-[#1a7a3c]/30 transition-colors">
-                      {p.avatarUrl
-                        ? <img src={p.avatarUrl} alt={p.name} className="w-full h-full rounded-xl object-cover" />
-                        : <span className="font-display text-2xl font-bold text-[#2aad56]">{p.name.charAt(0)}</span>
-                      }
+        {/* Player Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+            Array(6).fill(0).map((_, i) => (
+              <Card key={i} className="p-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <Skeleton variant="rect" className="w-16 h-16 rounded-2xl" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              </Card>
+            ))
+          ) : filtered.length === 0 ? (
+            <div className="col-span-full py-20 text-center">
+              <Card variant="glass" className="py-20 flex flex-col items-center">
+                 <div className="w-16 h-16 bg-muted/10 rounded-full flex items-center justify-center text-3xl mb-4">🔍</div>
+                 <h3 className="text-xl font-bold">No players matches your search</h3>
+                 <p className="text-muted mt-2">Try adjusting your filters or search term.</p>
+              </Card>
+            </div>
+          ) : (
+            filtered.map((player) => (
+              <Link key={player.id} href={`/players/${player.id}`}>
+                <Card className="p-6 hover:shadow-xl hover:border-primary/50 transition-all cursor-pointer group h-full">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform overflow-hidden border border-primary/20">
+                      {player.avatarUrl ? (
+                         <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover" />
+                      ) : (
+                         <span className="text-3xl font-black text-primary">
+                           {player.name.charAt(0)}
+                         </span>
+                      )}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-white truncate">{p.name}</p>
-                      {p.jerseyNumber && <p className="text-xs text-gray-500">#{p.jerseyNumber}</p>}
+                      <h3 className="text-lg font-bold truncate group-hover:text-primary transition-colors">{player.name}</h3>
+                      <p className="text-sm text-muted font-black">#{player.jerseyNumber || '—'}</p>
                     </div>
-                    {p.role && (
-                      <span className={`ml-auto text-xs px-2 py-1 rounded-md border font-medium flex-shrink-0 ${ROLE_COLORS[p.role] || 'bg-gray-500/20 text-gray-300 border-gray-500/30'}`}>
-                        {ROLE_ICON[p.role]} {p.role.replace('_', ' ')}
-                      </span>
+                  </div>
+
+                  <div className="mb-6 flex flex-wrap gap-2">
+                    {player.role && (
+                      <Badge variant={ROLE_VARIANTS[player.role] || 'outline'} className="py-1 px-3">
+                        {ROLE_ICONS[player.role]} {player.role.replace('_', ' ')}
+                      </Badge>
+                    )}
+                    {player.battingStyle && (
+                       <Badge variant="outline" className="border-border/50 text-muted px-2 py-0.5 text-[10px] font-black uppercase tracking-widest">
+                         BAT: {player.battingStyle.replace('_', '-')}
+                       </Badge>
                     )}
                   </div>
 
-                  {/* Stats grid */}
-                  <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="grid grid-cols-3 gap-3">
                     {[
-                      { label: 'Runs',    value: p.totalRuns,    color: 'text-[#2aad56]' },
-                      { label: 'Wickets', value: p.totalWickets, color: 'text-red-400'   },
-                      { label: 'HS',      value: p.highestScore, color: 'text-blue-400'  },
-                    ].map(s => (
-                      <div key={s.label} className="bg-[#0d1117] rounded-lg py-2 px-1">
-                        <div className={`font-display text-xl font-bold ${s.color}`}>{s.value}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
+                      { label: 'Runs', value: player.totalRuns, color: 'text-primary' },
+                      { label: 'Wickets', value: player.totalWickets, color: 'text-success' },
+                      { label: 'SR', value: player.strikeRate?.toFixed(1) || '0.0', color: 'text-warning' },
+                    ].map((stat) => (
+                      <div key={stat.label} className="bg-muted/5 rounded-xl py-3 px-2 text-center border border-border/5 hover:bg-muted/10 transition-colors">
+                        <div className={cn("text-xl font-black", stat.color)}>{stat.value}</div>
+                        <div className="text-[10px] uppercase font-bold tracking-widest text-muted mt-0.5">{stat.label}</div>
                       </div>
                     ))}
                   </div>
-
-                  {/* Batting style badge */}
-                  {(p.battingStyle || p.bowlingStyle) && (
-                    <div className="flex gap-2 mt-3">
-                      {p.battingStyle && (
-                        <span className="text-xs text-gray-500 bg-[#0d1117] px-2 py-1 rounded">
-                          🏏 {p.battingStyle.replace('_', '-')}
-                        </span>
-                      )}
-                      {p.bowlingStyle && (
-                        <span className="text-xs text-gray-500 bg-[#0d1117] px-2 py-1 rounded">
-                          🎳 {p.bowlingStyle}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                </Card>
               </Link>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </main>
-    </>
+    </div>
   );
 }
 
