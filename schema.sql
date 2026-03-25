@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS matches (
     toss_decision       VARCHAR(10), -- BAT, BOWL
     winner_team_id      BIGINT REFERENCES teams(id),
     result_text         VARCHAR(200),
+    man_of_the_match_player_id BIGINT REFERENCES players(id),
     created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
     venue        VARCHAR(255)
 );

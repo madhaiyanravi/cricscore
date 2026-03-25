@@ -67,6 +67,65 @@ public class MatchService {
         return toMatchResponse(match);
     }
 
+    @Transactional(readOnly = true)
+    public MatchDto.MatchSummaryResponse getMatchSummary(Long matchId) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Match not found"));
+
+        List<Innings> inningsList = inningsRepository.findByMatchIdOrderByInningsNumberAsc(matchId);
+        List<MatchDto.InningsSummaryResponse> innResp = new ArrayList<>();
+        for (Innings inn : inningsList) {
+            List<Ball> balls = ballRepository.findByMatchIdAndInningsNumberOrderByIdAsc(matchId, inn.getInningsNumber());
+            ExtrasSummary extras = computeExtras(balls);
+
+            MatchDto.InningsSummaryResponse r = new MatchDto.InningsSummaryResponse();
+            r.setInningsNumber(inn.getInningsNumber());
+            r.setBattingTeamId(inn.getBattingTeam().getId());
+            r.setBattingTeamName(inn.getBattingTeam().getName());
+            r.setBowlingTeamId(inn.getBowlingTeam().getId());
+            r.setBowlingTeamName(inn.getBowlingTeam().getName());
+            r.setRuns(inn.getRuns());
+            r.setWickets(inn.getWickets());
+            r.setOvers(formatOvers(inn.getBallsBowled()));
+            r.setExtrasTotal(extras.total);
+            r.setExtrasBreakdown(extras.breakdown);
+            r.setTargetRuns(inn.getTargetRuns());
+            r.setBattingCard(buildBattingCard(balls));
+            r.setBowlingCard(buildBowlingCard(balls));
+            r.setFallOfWickets(buildFallOfWickets(balls));
+            innResp.add(r);
+        }
+
+        MatchDto.MatchSummaryResponse summary = new MatchDto.MatchSummaryResponse();
+        summary.setMatch(toMatchResponse(match));
+        summary.setInnings(innResp);
+        summary.setMomCandidates(suggestManOfTheMatch(matchId, 5));
+        return summary;
+    }
+
+    @Transactional
+    public MatchDto.MatchResponse setManOfTheMatch(Long matchId, Long playerId) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Match not found"));
+        if (playerId == null) throw new RuntimeException("playerId is required");
+        // validate player exists
+        playerRepository.findById(playerId).orElseThrow(() -> new RuntimeException("Player not found"));
+        match.setManOfTheMatchPlayerId(playerId);
+        matchRepository.save(match);
+        return toMatchResponse(match);
+    }
+
+    @Transactional
+    public MatchDto.MatchResponse autoSetManOfTheMatch(Long matchId) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Match not found"));
+        List<MatchDto.MomCandidateResponse> candidates = suggestManOfTheMatch(matchId, 1);
+        if (candidates.isEmpty()) throw new RuntimeException("No MOM candidates found");
+        match.setManOfTheMatchPlayerId(candidates.get(0).getPlayerId());
+        matchRepository.save(match);
+        return toMatchResponse(match);
+    }
+
     public List<MatchDto.MatchResponse> getAllMatches() {
         return matchRepository.findAll().stream()
                 .map(this::toMatchResponse)
@@ -348,6 +407,8 @@ public class MatchService {
         response.setTossDecision(match.getTossDecision());
         response.setWinnerTeamId(match.getWinnerTeamId());
         response.setResultText(match.getResultText());
+        response.setManOfTheMatchPlayerId(match.getManOfTheMatchPlayerId());
+        response.setManOfTheMatchPlayerName(resolvePlayerName(match.getManOfTheMatchPlayerId()));
         return response;
     }
 
@@ -542,6 +603,104 @@ public class MatchService {
         return s;
     }
 
+    private String formatOvers(Integer legalBalls) {
+        int lb = legalBalls != null ? legalBalls : 0;
+        int oversFull = lb / 6;
+        int ballsPart = lb % 6;
+        return oversFull + "." + ballsPart;
+    }
+
+    private List<MatchDto.WicketFallResponse> buildFallOfWickets(List<Ball> balls) {
+        List<MatchDto.WicketFallResponse> out = new ArrayList<>();
+        int runs = 0;
+        int legalBalls = 0;
+        int wicketNo = 0;
+        for (Ball b : balls) {
+            runs += Math.max(0, b.getRuns() != null ? b.getRuns() : 0);
+            if (isLegalDelivery(b.getExtraType())) legalBalls++;
+            if (Boolean.TRUE.equals(b.getIsWicket())) {
+                wicketNo++;
+                MatchDto.WicketFallResponse r = new MatchDto.WicketFallResponse();
+                r.setWicketNumber(wicketNo);
+                r.setScore(runs);
+                r.setOvers(formatOvers(legalBalls));
+                Long outId = b.getWicketBatsmanId() != null ? b.getWicketBatsmanId() : b.getBatsmanId();
+                r.setBatsmanId(outId);
+                r.setBatsmanName(resolvePlayerName(outId));
+                r.setWicketType(b.getWicketType());
+                out.add(r);
+            }
+        }
+        return out;
+    }
+
+    private List<MatchDto.MomCandidateResponse> suggestManOfTheMatch(Long matchId, int limit) {
+        List<Ball> balls = ballRepository.findByMatchIdOrderByOverNumberAscBallNumberAsc(matchId);
+        if (balls.isEmpty()) return List.of();
+
+        Map<Long, MomAgg> agg = new HashMap<>();
+        for (Ball b : balls) {
+            // Batting
+            if (b.getBatsmanId() != null) {
+                MomAgg a = agg.computeIfAbsent(b.getBatsmanId(), k -> new MomAgg());
+                a.runs += Math.max(0, b.getBatRuns() != null ? b.getBatRuns() : 0);
+                boolean countsBallFaced = b.getExtraType() == null || !"WIDE".equals(b.getExtraType());
+                if (countsBallFaced && !"PENALTY".equals(b.getExtraType())) a.ballsFaced++;
+                if (b.getBatRuns() != null && b.getBatRuns() == 4) a.fours++;
+                if (b.getBatRuns() != null && b.getBatRuns() == 6) a.sixes++;
+            }
+
+            // Bowling
+            if (b.getBowlerId() != null) {
+                MomAgg a = agg.computeIfAbsent(b.getBowlerId(), k -> new MomAgg());
+                if (isLegalDelivery(b.getExtraType())) a.legalBallsBowled++;
+                int creditedRuns = 0;
+                if (b.getExtraType() == null || Set.of("WIDE", "NO_BALL").contains(b.getExtraType())) {
+                    creditedRuns = Math.max(0, b.getRuns() != null ? b.getRuns() : 0);
+                }
+                a.runsConceded += creditedRuns;
+                boolean wicketCredit = Boolean.TRUE.equals(b.getIsWicket()) && (b.getWicketType() == null || !"RUN_OUT".equals(b.getWicketType()));
+                if (wicketCredit) a.wickets++;
+            }
+        }
+
+        List<MatchDto.MomCandidateResponse> out = new ArrayList<>();
+        for (Map.Entry<Long, MomAgg> e : agg.entrySet()) {
+            Long pid = e.getKey();
+            MomAgg a = e.getValue();
+            double sr = a.ballsFaced > 0 ? (a.runs * 100.0) / a.ballsFaced : 0.0;
+            double econ = a.legalBallsBowled > 0 ? (a.runsConceded * 6.0) / a.legalBallsBowled : 0.0;
+
+            // Simple, explainable points model
+            double points = 0.0;
+            points += a.runs * 1.0;
+            points += a.fours * 0.5;
+            points += a.sixes * 1.0;
+            if (a.runs >= 50) points += 10;
+            if (a.runs >= 75) points += 10;
+            if (a.ballsFaced >= 10 && sr >= 150) points += 8;
+            if (a.ballsFaced >= 10 && sr >= 120) points += 4;
+
+            points += a.wickets * 22.0;
+            if (a.wickets >= 3) points += 10;
+            if (a.legalBallsBowled >= 12 && econ > 0 && econ <= 6.0) points += 6;
+            if (a.legalBallsBowled >= 12 && econ > 0 && econ <= 8.0) points += 3;
+            points -= a.runsConceded * 0.25;
+
+            if (points <= 0.0) continue;
+            MatchDto.MomCandidateResponse r = new MatchDto.MomCandidateResponse();
+            r.setPlayerId(pid);
+            r.setName(resolvePlayerName(pid));
+            r.setPoints(points);
+            r.setRuns(a.runs);
+            r.setWickets(a.wickets);
+            out.add(r);
+        }
+
+        out.sort((a, b) -> Double.compare(b.getPoints(), a.getPoints()));
+        return out.stream().limit(Math.max(1, limit)).collect(Collectors.toList());
+    }
+
     private static class BowlerAgg {
         int legalBalls = 0;
         int runs = 0;
@@ -552,5 +711,15 @@ public class MatchService {
     private static class ExtrasSummary {
         int total;
         Map<String, Integer> breakdown;
+    }
+
+    private static class MomAgg {
+        int runs = 0;
+        int ballsFaced = 0;
+        int fours = 0;
+        int sixes = 0;
+        int wickets = 0;
+        int legalBallsBowled = 0;
+        int runsConceded = 0;
     }
 }

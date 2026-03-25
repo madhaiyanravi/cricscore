@@ -39,4 +39,15 @@ public class PublicController {
         }
         return ResponseEntity.ok(matchService.getBallByBall(matchId, inningsNumber));
     }
+
+    @GetMapping("/match/{matchId}/summary")
+    public ResponseEntity<MatchDto.MatchSummaryResponse> getPublicMatchSummary(
+            @PathVariable Long matchId,
+            @RequestParam(name = "t") String token
+    ) {
+        if (token == null || token.isBlank() || !jwtUtil.validateSpectatorToken(token, matchId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(matchService.getMatchSummary(matchId));
+    }
 }

@@ -31,6 +31,24 @@ public class MatchController {
         return ResponseEntity.ok(matchService.getMatch(id));
     }
 
+    @GetMapping("/matches/{id}/summary")
+    public ResponseEntity<MatchDto.MatchSummaryResponse> getMatchSummary(@PathVariable Long id) {
+        return ResponseEntity.ok(matchService.getMatchSummary(id));
+    }
+
+    @PostMapping("/matches/{id}/mom")
+    public ResponseEntity<MatchDto.MatchResponse> setManOfTheMatch(
+            @PathVariable Long id,
+            @RequestBody MatchDto.SetManOfTheMatchRequest request
+    ) {
+        return ResponseEntity.ok(matchService.setManOfTheMatch(id, request.getPlayerId()));
+    }
+
+    @PostMapping("/matches/{id}/mom/auto")
+    public ResponseEntity<MatchDto.MatchResponse> autoSetManOfTheMatch(@PathVariable Long id) {
+        return ResponseEntity.ok(matchService.autoSetManOfTheMatch(id));
+    }
+
     @PostMapping("/matches/{id}/innings/2/start")
     public ResponseEntity<MatchDto.ScoreResponse> startSecondInnings(@PathVariable Long id) {
         return ResponseEntity.ok(matchService.startSecondInnings(id));

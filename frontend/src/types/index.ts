@@ -11,10 +11,15 @@ export interface Player {
 
 export interface Match {
   id: number;
+  teamAId?: number;
+  teamBId?: number;
   teamAName: string;
   teamBName: string;
   totalOvers: number;
   status: 'IN_PROGRESS' | 'COMPLETED';
+  resultText?: string | null;
+  manOfTheMatchPlayerId?: number | null;
+  manOfTheMatchPlayerName?: string | null;
 }
 
 export interface BallResult {
@@ -150,4 +155,44 @@ export interface MatchAnalytics {
   topBowlerWickets?: number;
   overByOver: OverData[];
   runsBreakdown: Record<string, number>;
+}
+
+export interface WicketFall {
+  wicketNumber: number;
+  score: number;
+  overs: string;
+  batsmanId?: number | null;
+  batsmanName?: string | null;
+  wicketType?: string | null;
+}
+
+export interface InningsSummary {
+  inningsNumber: number;
+  battingTeamId: number;
+  battingTeamName: string;
+  bowlingTeamId: number;
+  bowlingTeamName: string;
+  runs: number;
+  wickets: number;
+  overs: string;
+  extrasTotal: number;
+  extrasBreakdown: Record<string, number>;
+  targetRuns?: number | null;
+  battingCard: BatterLine[];
+  bowlingCard: BowlerLine[];
+  fallOfWickets: WicketFall[];
+}
+
+export interface MomCandidate {
+  playerId: number;
+  name: string;
+  points: number;
+  runs: number;
+  wickets: number;
+}
+
+export interface MatchSummary {
+  match: Match;
+  innings: InningsSummary[];
+  momCandidates: MomCandidate[];
 }

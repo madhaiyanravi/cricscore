@@ -36,4 +36,7 @@ public class Match {
     private Long winnerTeamId;
     @Column(length = 200)
     private String resultText;
+
+    // Awards
+    private Long manOfTheMatchPlayerId;
 }

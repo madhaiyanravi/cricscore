@@ -28,6 +28,8 @@ public class MatchDto {
         private String tossDecision;
         private Long winnerTeamId;
         private String resultText;
+        private Long manOfTheMatchPlayerId;
+        private String manOfTheMatchPlayerName;
     }
 
     @Data
@@ -147,5 +149,54 @@ public class MatchDto {
     @Data
     public static class SpectateTokenResponse {
         private String token;
+    }
+
+    @Data
+    public static class SetManOfTheMatchRequest {
+        private Long playerId;
+    }
+
+    @Data
+    public static class MomCandidateResponse {
+        private Long playerId;
+        private String name;
+        private Double points;
+        private Integer runs;
+        private Integer wickets;
+    }
+
+    @Data
+    public static class WicketFallResponse {
+        private Integer wicketNumber;
+        private Integer score;
+        private String overs;
+        private Long batsmanId;
+        private String batsmanName;
+        private String wicketType;
+    }
+
+    @Data
+    public static class InningsSummaryResponse {
+        private Integer inningsNumber;
+        private Long battingTeamId;
+        private String battingTeamName;
+        private Long bowlingTeamId;
+        private String bowlingTeamName;
+        private Integer runs;
+        private Integer wickets;
+        private String overs;
+        private Integer extrasTotal;
+        private Map<String, Integer> extrasBreakdown;
+        private Integer targetRuns;
+        private List<BatterLine> battingCard;
+        private List<BowlerLine> bowlingCard;
+        private List<WicketFallResponse> fallOfWickets;
+    }
+
+    @Data
+    public static class MatchSummaryResponse {
+        private MatchResponse match;
+        private List<InningsSummaryResponse> innings;
+        private List<MomCandidateResponse> momCandidates; // top suggestions
     }
 }

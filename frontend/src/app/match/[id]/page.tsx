@@ -313,6 +313,12 @@ function MatchPage() {
           </div>
 
           <div className="flex gap-2">
+            <a
+              href={`/match/${matchId}/summary`}
+              className="text-xs text-gray-300 bg-white/5 border border-white/10 hover:bg-white/10 px-3 py-1.5 rounded-lg font-semibold transition-all"
+            >
+              Summary
+            </a>
             <button
               onClick={createShareLink}
               disabled={submitting}

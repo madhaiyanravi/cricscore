@@ -64,6 +64,9 @@ export const matchesApi = {
   }) => api.post('/matches', body),
   getAll: () => api.get('/matches'),
   getOne: (id: number) => api.get(`/matches/${id}`),
+  getSummary: (id: number) => api.get(`/matches/${id}/summary`),
+  setMom: (id: number, playerId: number) => api.post(`/matches/${id}/mom`, { playerId }),
+  autoMom: (id: number) => api.post(`/matches/${id}/mom/auto`),
   startSecondInnings: (id: number) => api.post(`/matches/${id}/innings/2/start`),
   spectateToken: (id: number) => api.post(`/matches/${id}/spectate-token`),
 };
@@ -95,6 +98,8 @@ export const publicScoreApi = {
     publicApi.get(`/public/score/${matchId}`, { params: { t: token } }),
   getBalls: (matchId: number, token: string, inningsNumber?: number) =>
     publicApi.get(`/public/score/${matchId}/balls`, { params: { t: token, ...(inningsNumber ? { inningsNumber } : {}) } }),
+  getSummary: (matchId: number, token: string) =>
+    publicApi.get(`/public/match/${matchId}/summary`, { params: { t: token } }),
 };
 
 // ── Players ───────────────────────────────────────────────────────────────────
