@@ -1,15 +1,21 @@
-'use client';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import withAuth from '@/components/withAuth';
 import { teamsApi, matchesApi } from '@/lib/api';
 import { Team } from '@/types';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
+import Select from '@/components/ui/Select';
+import { useToast } from '@/components/providers/ToastProvider';
+import { cn } from '@/lib/utils';
 
 const OVERS_OPTIONS = [5, 10, 15, 20];
 
 function CreateMatchPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamAId, setTeamAId] = useState('');
   const [teamBId, setTeamBId] = useState('');
@@ -17,7 +23,6 @@ function CreateMatchPage() {
   const [tossWinnerTeamId, setTossWinnerTeamId] = useState('');
   const [tossDecision, setTossDecision] = useState<'BAT' | 'BOWL'>('BAT');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     teamsApi.getAll().then(({ data }) => setTeams(data));
@@ -25,13 +30,12 @@ function CreateMatchPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     if (teamAId === teamBId) {
-      setError('Team A and Team B must be different.');
+      toast('Team A and Team B must be different.', 'error');
       return;
     }
     if (tossWinnerTeamId && tossWinnerTeamId !== teamAId && tossWinnerTeamId !== teamBId) {
-      setError('Toss winner must be Team A or Team B.');
+      toast('Toss winner must be Team A or Team B.', 'error');
       return;
     }
     setLoading(true);
@@ -43,9 +47,10 @@ function CreateMatchPage() {
         tossWinnerTeamId: tossWinnerTeamId ? Number(tossWinnerTeamId) : null,
         tossDecision: tossWinnerTeamId ? tossDecision : null,
       });
+      toast('Match created successfully!', 'success');
       router.push(`/match/${data.id}`);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create match');
+      toast(err.response?.data?.error || 'Failed to create match', 'error');
     } finally {
       setLoading(false);
     }
@@ -55,157 +60,141 @@ function CreateMatchPage() {
   const teamB = teams.find(t => String(t.id) === teamBId);
 
   return (
-    <>
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-display text-4xl font-bold text-white">New Match</h1>
-          <p className="text-gray-400 text-sm mt-1">Set up a new cricket match</p>
+      <main className="max-w-2xl mx-auto px-4 py-12 space-y-10">
+        <div className="border-b border-border/50 pb-8">
+          <h1 className="font-display text-5xl font-black text-text tracking-tighter">New Match</h1>
+          <p className="text-muted text-sm font-bold mt-1 uppercase tracking-widest">Set up a new cricket match</p>
         </div>
 
         {teams.length < 2 && (
-          <div className="bg-amber-500/10 border border-amber-500/30 text-amber-400 px-4 py-3 rounded-lg text-sm mb-6">
-            ⚠️ You need at least 2 teams to create a match.{' '}
-            <a href="/teams" className="underline hover:no-underline">Add teams →</a>
+          <div className="bg-warning/10 border border-warning/30 text-warning px-6 py-4 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3 animate-pulse">
+            <span className="text-xl">⚠️</span>
+            <span>You need at least 2 teams to create a match. <a href="/teams" className="underline hover:text-text ml-2">Add teams →</a></span>
           </div>
         )}
 
-        <form onSubmit={handleCreate} className="space-y-6">
+        <form onSubmit={handleCreate} className="space-y-8">
           {/* Team selection */}
-          <div className="card p-6 space-y-4">
-            <h2 className="font-display text-xl font-semibold">Select Teams</h2>
+          <Card className="p-8 space-y-8 bg-muted/5 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-2 h-full bg-primary" />
+            <h2 className="font-display text-xl font-black text-text uppercase tracking-widest">Select Teams</h2>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
-                  Team A
-                </label>
-                <select
-                  value={teamAId}
-                  onChange={(e) => setTeamAId(e.target.value)}
-                  className="input"
-                  required
-                >
-                  <option value="">Choose team…</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
-                  Team B
-                </label>
-                <select
-                  value={teamBId}
-                  onChange={(e) => setTeamBId(e.target.value)}
-                  className="input"
-                  required
-                >
-                  <option value="">Choose team…</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Select
+                label="Team A"
+                value={teamAId}
+                onChange={(e) => setTeamAId(e.target.value)}
+                options={[
+                  { label: 'Choose team…', value: '' },
+                  ...teams.map(t => ({ label: t.name, value: String(t.id) }))
+                ]}
+                required
+              />
+              <Select
+                label="Team B"
+                value={teamBId}
+                onChange={(e) => setTeamBId(e.target.value)}
+                options={[
+                  { label: 'Choose team…', value: '' },
+                  ...teams.map(t => ({ label: t.name, value: String(t.id) }))
+                ]}
+                required
+              />
             </div>
 
             {/* VS display */}
             {teamA && teamB && (
-              <div className="flex items-center justify-center gap-4 py-3 bg-[#0d1117] rounded-lg border border-[#30363d]">
-                <span className="font-display text-lg font-bold text-white">{teamA.name}</span>
-                <span className="text-[#2aad56] font-display text-xl font-bold">VS</span>
-                <span className="font-display text-lg font-bold text-white">{teamB.name}</span>
+              <div className="flex items-center justify-center gap-6 py-6 bg-background rounded-2xl border-2 border-border/50 shadow-inner group transition-all hover:border-primary/30">
+                <span className="font-display text-2xl font-black text-text group-hover:text-primary transition-colors">{teamA.name}</span>
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs ring-4 ring-primary/5">VS</div>
+                <span className="font-display text-2xl font-black text-text group-hover:text-primary transition-colors">{teamB.name}</span>
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Overs */}
-          <div className="card p-6">
-            <h2 className="font-display text-xl font-semibold mb-4">Match Overs</h2>
-            <div className="grid grid-cols-4 gap-3">
+          <Card className="p-8 space-y-6">
+            <div className="flex items-center justify-between">
+               <h2 className="font-display text-xl font-black text-text uppercase tracking-widest">Match Overs</h2>
+               <div className="px-3 py-1 bg-primary/10 rounded-full text-[10px] font-black text-primary uppercase tracking-widest">
+                  {totalOvers * 6} BALLS
+               </div>
+            </div>
+            <div className="grid grid-cols-4 gap-4">
               {OVERS_OPTIONS.map((o) => (
                 <button
                   key={o}
                   type="button"
                   onClick={() => setTotalOvers(o)}
-                  className={`py-3 rounded-lg border font-display text-xl font-bold transition-all ${
+                  className={cn(
+                    "py-5 rounded-2xl border-2 font-display text-2xl font-black transition-all duration-300 transform active:scale-95",
                     totalOvers === o
-                      ? 'bg-[#1a7a3c] border-[#2aad56] text-white'
-                      : 'bg-[#0d1117] border-[#30363d] text-gray-400 hover:border-[#1a7a3c] hover:text-white'
-                  }`}
+                      ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 -translate-y-1"
+                      : "bg-muted/5 border-border/50 text-muted hover:border-primary/30 hover:text-text"
+                  )}
                 >
                   {o}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-500 mt-3">Selected: {totalOvers} overs ({totalOvers * 6} balls)</p>
-          </div>
+          </Card>
 
           {/* Toss */}
           {teamA && teamB && (
-            <div className="card p-6 space-y-4">
-              <h2 className="font-display text-xl font-semibold">Toss</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
-                    Toss Winner
-                  </label>
-                  <select
-                    value={tossWinnerTeamId}
-                    onChange={(e) => setTossWinnerTeamId(e.target.value)}
-                    className="input"
-                  >
-                    <option value="">Skip (default Team A bats)</option>
-                    <option value={teamA.id}>{teamA.name}</option>
-                    <option value={teamB.id}>{teamB.name}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
+            <Card className="p-8 space-y-8 bg-muted/5 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-2 h-full bg-warning" />
+              <h2 className="font-display text-xl font-black text-text uppercase tracking-widest">Toss details</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <Select
+                  label="Toss Winner"
+                  value={tossWinnerTeamId}
+                  onChange={(e) => setTossWinnerTeamId(e.target.value)}
+                  options={[
+                    { label: 'Skip (default Team A bats)', value: '' },
+                    { label: teamA.name, value: String(teamA.id) },
+                    { label: teamB.name, value: String(teamB.id) }
+                  ]}
+                />
+                <div className="space-y-3">
+                  <label className="block text-[10px] text-muted font-black uppercase tracking-[0.2em] ml-1">
                     Decision
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     {(['BAT', 'BOWL'] as const).map((d) => (
                       <button
                         key={d}
                         type="button"
                         onClick={() => setTossDecision(d)}
                         disabled={!tossWinnerTeamId}
-                        className={`py-3 rounded-lg border font-display text-lg font-bold transition-all disabled:opacity-40 ${
-                          tossDecision === d
-                            ? 'bg-[#1a7a3c] border-[#2aad56] text-white'
-                            : 'bg-[#0d1117] border-[#30363d] text-gray-400 hover:border-[#1a7a3c] hover:text-white'
-                        }`}
+                        className={cn(
+                           "py-3.5 rounded-xl border-2 font-black text-xs uppercase tracking-widest transition-all disabled:opacity-30",
+                           tossDecision === d
+                             ? "bg-warning border-warning text-background shadow-lg shadow-warning/10"
+                             : "bg-background border-border/50 text-muted hover:border-warning/30 hover:text-text"
+                        )}
                       >
                         {d}
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    If skipped, match starts with Team A batting.
-                  </p>
                 </div>
               </div>
-            </div>
+            </Card>
           )}
 
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <button
+          <Button
             type="submit"
-            disabled={loading || teams.length < 2}
-            className="btn-primary w-full py-3 text-base"
+            isLoading={loading}
+            disabled={teams.length < 2}
+            className="w-full py-6 text-xl font-black uppercase tracking-[0.3em] shadow-2xl shadow-primary/20"
           >
-            {loading ? 'Creating…' : '🏏 Start Match'}
-          </button>
+            Start Match ⚡
+          </Button>
         </form>
       </main>
-    </>
+    </div>
   );
 }
 

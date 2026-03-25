@@ -1,37 +1,45 @@
-'use client';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import withAuth from '@/components/withAuth';
 import { playersApi } from '@/lib/api';
 import { PlayerProfile } from '@/types';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
+import Select from '@/components/ui/Select';
+import Badge from '@/components/ui/Badge';
+import Skeleton from '@/components/ui/Skeleton';
+import { useToast } from '@/components/providers/ToastProvider';
+import { cn } from '@/lib/utils';
 
 const BATTING_STYLES = ['RIGHT_HAND', 'LEFT_HAND'];
 const BOWLING_STYLES = ['FAST', 'MEDIUM', 'SPIN'];
-const ROLES          = ['BATSMAN', 'BOWLER', 'ALL_ROUNDER', 'WICKET_KEEPER'];
+const ROLES = ['BATSMAN', 'BOWLER', 'ALL_ROUNDER', 'WICKET_KEEPER'];
 
-function StatCard({ label, value, sub, color = 'text-white' }: {
+function StatCard({ label, value, sub, color = 'text-text' }: {
   label: string; value: string | number; sub?: string; color?: string;
 }) {
   return (
-    <div className="card p-4 text-center">
-      <div className={`font-display text-3xl font-bold ${color}`}>{value}</div>
-      <div className="text-xs text-gray-400 mt-1 font-medium">{label}</div>
-      {sub && <div className="text-xs text-gray-600 mt-0.5">{sub}</div>}
-    </div>
+    <Card className="p-6 text-center group hover:border-primary/30 transition-all duration-300 transform hover:-translate-y-1 bg-muted/5">
+      <div className={cn("font-display text-4xl font-black mb-1 group-hover:scale-110 transition-transform", color)}>{value}</div>
+      <div className="text-[10px] text-muted font-black uppercase tracking-[0.2em]">{label}</div>
+      {sub && <div className="text-[10px] text-muted/40 font-bold mt-1 italic">{sub}</div>}
+    </Card>
   );
 }
 
 function PlayerDetailPage() {
-  const params   = useParams();
-  const router   = useRouter();
+  const params = useParams();
+  const router = useRouter();
+  const { toast } = useToast();
   const playerId = Number(params.id);
 
-  const [player, setPlayer]     = useState<PlayerProfile | null>(null);
-  const [editing, setEditing]   = useState(false);
-  const [loading, setLoading]   = useState(true);
-  const [saving, setSaving]     = useState(false);
-  const [form, setForm]         = useState<Partial<PlayerProfile>>({});
+  const [player, setPlayer] = useState<PlayerProfile | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<Partial<PlayerProfile>>({});
 
   useEffect(() => {
     playersApi.getOne(playerId)
@@ -46,188 +54,222 @@ function PlayerDetailPage() {
       setPlayer(data);
       setForm(data);
       setEditing(false);
+      toast('Profile updated successfully!', 'success');
+    } catch (err: any) {
+      toast(err.response?.data?.error || 'Failed to update profile', 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  const field = (key: keyof PlayerProfile, label: string, type: 'text' | 'textarea' | 'number' = 'text') => (
-    <div>
-      <label className="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">{label}</label>
-      {type === 'textarea' ? (
-        <textarea
-          value={(form[key] as string) ?? ''}
-          onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-          className="input resize-none h-20"
-          placeholder={`Enter ${label.toLowerCase()}…`}
-        />
-      ) : (
-        <input
-          type={type}
-          value={(form[key] as string | number) ?? ''}
-          onChange={e => setForm(f => ({ ...f, [key]: type === 'number' ? Number(e.target.value) : e.target.value }))}
-          className="input"
-          placeholder={`Enter ${label.toLowerCase()}…`}
-        />
-      )}
-    </div>
-  );
-
-  const selectField = (key: keyof PlayerProfile, label: string, options: string[]) => (
-    <div>
-      <label className="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">{label}</label>
-      <select
-        value={(form[key] as string) ?? ''}
-        onChange={e => setForm(f => ({ ...f, [key]: e.target.value || undefined }))}
-        className="input"
-      >
-        <option value="">Not set</option>
-        {options.map(o => <option key={o} value={o}>{o.replace('_', ' ')}</option>)}
-      </select>
-    </div>
-  );
-
   if (loading) return (
-    <><Navbar /><div className="flex items-center justify-center min-h-[60vh]">
-      <p className="text-gray-500 animate-pulse">Loading player…</p>
-    </div></>
+    <div className="min-h-screen bg-background text-text">
+        <Navbar />
+        <main className="max-w-3xl mx-auto px-4 py-12 space-y-8">
+            <Skeleton className="h-40 rounded-3xl" />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}
+            </div>
+            <Skeleton className="h-64 rounded-3xl" />
+        </main>
+    </div>
   );
 
   if (!player) return (
-    <><Navbar /><div className="flex items-center justify-center min-h-[60vh]">
-      <p className="text-red-400">Player not found</p>
-    </div></>
+    <div className="min-h-screen bg-background text-text">
+        <Navbar />
+        <main className="max-w-3xl mx-auto px-4 py-20 text-center">
+            <div className="text-6xl mb-6 opacity-20 text-text">🏜️</div>
+            <h2 className="text-2xl font-black text-text uppercase tracking-widest">Player Not Found</h2>
+            <Button variant="ghost" className="mt-6" onClick={() => router.back()}>← Go Back</Button>
+        </main>
+    </div>
   );
 
-  const sr   = player.strikeRate?.toFixed(1)   ?? '—';
-  const avg  = player.battingAverage?.toFixed(1) ?? '—';
-  const econ = player.economyRate?.toFixed(2)  ?? '—';
+  const sr = player.strikeRate?.toFixed(1) ?? '—';
+  const avg = player.battingAverage?.toFixed(1) ?? '—';
+  const econ = player.economyRate?.toFixed(2) ?? '—';
   const bowl = player.bowlingAverage?.toFixed(1) ?? '—';
 
   return (
-    <>
+    <div className="min-h-screen bg-background text-text">
       <Navbar />
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-3xl mx-auto px-4 py-8 space-y-10">
 
         {/* Profile header */}
-        <div className="card p-6">
-          <div className="flex items-start gap-5">
+        <Card className="p-8 bg-muted/5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 text-primary/5 select-none font-black italic text-8xl transition-all group-hover:scale-110 group-hover:text-primary/10">PRO</div>
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 relative z-10">
             {/* Avatar */}
-            <div className="w-20 h-20 rounded-2xl bg-[#1a7a3c]/20 flex items-center justify-center flex-shrink-0 overflow-hidden border border-[#30363d]">
+            <div className="w-28 h-28 rounded-3xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-border/50 shadow-inner group-hover:border-primary/50 transition-all duration-500">
               {player.avatarUrl
                 ? <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover" />
-                : <span className="font-display text-4xl font-bold text-[#2aad56]">{player.name.charAt(0)}</span>
+                : <span className="font-display text-5xl font-black text-primary">{player.name.charAt(0)}</span>
               }
             </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
                 <div>
-                  <h1 className="font-display text-3xl font-bold text-white">{player.name}</h1>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <h1 className="font-display text-4xl sm:text-5xl font-black text-text tracking-tighter leading-none mb-4">{player.name}</h1>
+                  <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap mb-4">
                     {player.jerseyNumber && (
-                      <span className="text-xs text-gray-400 bg-[#0d1117] px-2 py-0.5 rounded font-mono">#{player.jerseyNumber}</span>
+                      <Badge variant="outline" className="text-muted border-border/50 font-mono tracking-tighter">#{player.jerseyNumber}</Badge>
                     )}
                     {player.role && (
-                      <span className="text-xs text-[#2aad56] bg-[#1a7a3c]/20 border border-[#1a7a3c]/40 px-2 py-0.5 rounded font-medium">
+                      <Badge variant="primary" className="font-black uppercase tracking-widest px-3">
                         {player.role.replace('_', ' ')}
-                      </span>
-                    )}
-                    {player.battingStyle && (
-                      <span className="text-xs text-gray-400">🏏 {player.battingStyle.replace('_', '-')}</span>
-                    )}
-                    {player.bowlingStyle && (
-                      <span className="text-xs text-gray-400">🎳 {player.bowlingStyle}</span>
+                      </Badge>
                     )}
                   </div>
-                  {player.bio && <p className="text-sm text-gray-400 mt-2 leading-relaxed">{player.bio}</p>}
+                  <div className="flex items-center justify-center sm:justify-start gap-4 text-[10px] font-black uppercase tracking-widest text-muted/60">
+                    {player.battingStyle && (
+                      <span className="flex items-center gap-1.5"><span className="text-base">🏏</span> {player.battingStyle.replace('_', '-')}</span>
+                    )}
+                    {player.bowlingStyle && (
+                      <span className="flex items-center gap-1.5"><span className="text-base">🎳</span> {player.bowlingStyle}</span>
+                    )}
+                  </div>
+                  {player.bio && <p className="text-sm text-muted mt-6 leading-relaxed italic border-l-2 border-border/30 pl-4">{player.bio}</p>}
                 </div>
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setEditing(!editing)}
-                  className="btn-secondary text-xs px-3 py-1.5 flex-shrink-0"
+                  className="flex-shrink-0"
                 >
-                  {editing ? 'Cancel' : '✏️ Edit'}
-                </button>
+                  {editing ? 'Cancel' : '✏️ Edit Profile'}
+                </Button>
               </div>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Edit form */}
         {editing && (
-          <div className="card p-6 space-y-4">
-            <h2 className="font-display text-xl font-semibold text-white">Edit Profile</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {field('name', 'Name')}
-              {field('avatarUrl', 'Avatar URL')}
-              {field('jerseyNumber', 'Jersey Number', 'number')}
-              {selectField('role', 'Role', ROLES)}
-              {selectField('battingStyle', 'Batting Style', BATTING_STYLES)}
-              {selectField('bowlingStyle', 'Bowling Style', BOWLING_STYLES)}
+          <Card className="p-8 space-y-8 animate-in slide-in-from-top-4 duration-300">
+            <h2 className="font-display text-2xl font-black text-text tracking-tighter border-b border-border/50 pb-4">Edit Profile</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              <Input
+                label="Name"
+                value={form.name ?? ''}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Enter player name"
+              />
+              <Input
+                label="Avatar URL"
+                value={form.avatarUrl ?? ''}
+                onChange={e => setForm(f => ({ ...f, avatarUrl: e.target.value }))}
+                placeholder="https://example.com/photo.jpg"
+              />
+              <Input
+                label="Jersey Number"
+                type="number"
+                value={form.jerseyNumber ?? ''}
+                onChange={e => setForm(f => ({ ...f, jerseyNumber: Number(e.target.value) }))}
+                placeholder="e.g. 10"
+              />
+              <Select
+                label="Role"
+                value={form.role ?? ''}
+                onChange={e => setForm(f => ({ ...f, role: e.target.value as any }))}
+                options={[
+                    { label: 'Not set', value: '' },
+                    ...ROLES.map(r => ({ label: r.replace('_', ' '), value: r }))
+                ]}
+              />
+              <Select
+                label="Batting Style"
+                value={form.battingStyle ?? ''}
+                onChange={e => setForm(f => ({ ...f, battingStyle: e.target.value as any }))}
+                options={[
+                    { label: 'Not set', value: '' },
+                    ...BATTING_STYLES.map(s => ({ label: s.replace('_', ' '), value: s }))
+                ]}
+              />
+              <Select
+                label="Bowling Style"
+                value={form.bowlingStyle ?? ''}
+                onChange={e => setForm(f => ({ ...f, bowlingStyle: e.target.value as any }))}
+                options={[
+                    { label: 'Not set', value: '' },
+                    ...BOWLING_STYLES.map(s => ({ label: s.replace('_', ' '), value: s }))
+                ]}
+              />
             </div>
-            {field('bio', 'Bio', 'textarea')}
-            <button onClick={handleSave} disabled={saving} className="btn-primary w-full">
-              {saving ? 'Saving…' : 'Save Changes'}
-            </button>
-          </div>
+            <div className="space-y-3">
+                <label className="block text-[10px] text-muted font-black uppercase tracking-[0.2em] ml-1">Bio</label>
+                <textarea
+                    value={form.bio ?? ''}
+                    onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
+                    className="input resize-none h-32"
+                    placeholder="Tell us about this player..."
+                />
+            </div>
+            <Button onClick={handleSave} isLoading={saving} className="w-full py-4 text-base tracking-widest">
+              Save Profile Changes ⚡
+            </Button>
+          </Card>
         )}
 
         {/* Batting stats */}
-        <div>
-          <h2 className="font-display text-xl font-semibold text-white mb-3 flex items-center gap-2">
-            🏏 Batting
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Runs"     value={player.totalRuns}    color="text-[#2aad56]" />
-            <StatCard label="Average"  value={avg}                 color="text-blue-400" />
-            <StatCard label="Strike Rate" value={`${sr}`}          color="text-amber-400" />
-            <StatCard label="Highest"  value={player.highestScore} color="text-purple-400" />
+        <section className="space-y-6">
+          <div className="flex items-center gap-3">
+             <div className="w-1.5 h-6 bg-primary rounded-full" />
+             <h2 className="font-display text-2xl font-black text-text tracking-tighter uppercase">Batting Stats</h2>
           </div>
-          <div className="grid grid-cols-3 gap-3 mt-3">
-            <StatCard label="4s"       value={player.totalFours}   color="text-blue-300" />
-            <StatCard label="6s"       value={player.totalSixes}   color="text-purple-300" />
-            <StatCard label="Balls"    value={player.totalBallsFaced} />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard label="Runs"     value={player.totalRuns}    color="text-success" />
+            <StatCard label="Average"  value={avg}                 color="text-accent" />
+            <StatCard label="Strike Rate" value={`${sr}`}          color="text-warning" />
+            <StatCard label="Highest"  value={player.highestScore} color="text-primary" />
           </div>
-        </div>
+          <div className="grid grid-cols-3 gap-4 mt-4">
+            <StatCard label="Fours"       value={player.totalFours}   color="text-accent/80" />
+            <StatCard label="Sixes"       value={player.totalSixes}   color="text-primary/80" />
+            <StatCard label="Balls faced" value={player.totalBallsFaced} color="text-muted/60" />
+          </div>
+        </section>
 
         {/* Bowling stats (only if bowler or all-rounder) */}
         {(player.totalWickets > 0 || player.role === 'BOWLER' || player.role === 'ALL_ROUNDER') && (
-          <div>
-            <h2 className="font-display text-xl font-semibold text-white mb-3 flex items-center gap-2">
-              🎳 Bowling
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard label="Wickets"  value={player.totalWickets} color="text-red-400" />
-              <StatCard label="Average"  value={bowl}                color="text-orange-400" />
-              <StatCard label="Economy"  value={econ}                color="text-amber-400" />
+          <section className="space-y-6">
+            <div className="flex items-center gap-3">
+               <div className="w-1.5 h-6 bg-danger rounded-full" />
+               <h2 className="font-display text-2xl font-black text-text tracking-tighter uppercase">Bowling Stats</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <StatCard label="Wickets"  value={player.totalWickets} color="text-danger" />
+              <StatCard label="Average"  value={bowl}                color="text-warning" />
+              <StatCard label="Economy"  value={econ}                color="text-primary" />
               <StatCard label="Matches"  value={player.totalMatches} />
             </div>
-          </div>
+          </section>
         )}
 
         {/* Career overview */}
-        <div className="card p-5">
-          <h2 className="font-display text-lg font-semibold text-white mb-4">Career Overview</h2>
-          <div className="space-y-3">
+        <Card className="p-8 border border-border/50">
+          <h2 className="font-display text-2xl font-black text-text tracking-tighter border-b border-border/30 pb-4 mb-6 uppercase">Career Overview</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-12">
             {[
-              { label: 'Total Matches',  value: player.totalMatches },
-              { label: 'Total Runs',     value: player.totalRuns },
-              { label: 'Total Wickets',  value: player.totalWickets },
+              { label: 'Matches Played',  value: player.totalMatches },
+              { label: 'Career Runs',     value: player.totalRuns },
+              { label: 'Career Wickets',  value: player.totalWickets },
               { label: 'Highest Score',  value: player.highestScore },
               { label: 'Batting Average', value: avg },
-              { label: 'Strike Rate',    value: sr },
-              { label: 'Economy Rate',   value: econ },
+              { label: 'Overall Strike Rate', value: sr },
+              { label: 'Bowling Economy',   value: econ },
             ].map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between py-2 border-b border-[#30363d] last:border-0">
-                <span className="text-sm text-gray-400">{label}</span>
-                <span className="text-sm font-semibold text-white">{value}</span>
+              <div key={label} className="flex items-center justify-between py-3 border-b border-border/20 last:border-0 group">
+                <span className="text-xs text-muted font-black uppercase tracking-widest">{label}</span>
+                <span className="text-sm font-black text-text group-hover:text-primary transition-colors">{value}</span>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
       </main>
-    </>
+    </div>
   );
 }
 

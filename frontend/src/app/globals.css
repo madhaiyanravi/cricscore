@@ -49,35 +49,38 @@
 
 @layer components {
   .card {
-    @apply bg-[#161b22] border border-[#30363d] rounded-xl;
+    @apply bg-card border-border rounded-2xl shadow-sm transition-all duration-300;
   }
 
   .btn-primary {
-    @apply bg-[#1a7a3c] hover:bg-[#2aad56] text-white font-semibold
-           px-5 py-2.5 rounded-lg transition-all duration-150
-           disabled:opacity-40 disabled:cursor-not-allowed;
+    @apply bg-primary hover:bg-primary-hover text-white font-black uppercase tracking-widest
+           px-6 py-3 rounded-xl transition-all duration-200
+           disabled:opacity-20 disabled:cursor-not-allowed shadow-lg shadow-primary/10
+           active:scale-95 flex items-center justify-center gap-2;
   }
 
   .btn-secondary {
-    @apply bg-[#1c2330] hover:bg-[#252d3d] text-white border border-[#30363d]
-           font-semibold px-5 py-2.5 rounded-lg transition-all duration-150;
+    @apply bg-muted/10 hover:bg-muted/20 text-text border border-border/50
+           font-black uppercase tracking-widest px-6 py-3 rounded-xl transition-all duration-200
+           active:scale-95 flex items-center justify-center gap-2;
   }
 
   .btn-danger {
-    @apply bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-600/30
-           font-semibold px-5 py-2.5 rounded-lg transition-all duration-150;
+    @apply bg-danger/10 hover:bg-danger text-danger hover:text-white border border-danger/30
+           font-black uppercase tracking-widest px-6 py-2.5 rounded-xl transition-all duration-200
+           active:scale-95 flex items-center justify-center gap-2;
   }
 
   .input {
-    @apply w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3
-           text-white placeholder-gray-500 focus:outline-none
-           focus:border-[#1a7a3c] focus:ring-1 focus:ring-[#1a7a3c]
-           transition-colors duration-150;
+    @apply w-full bg-background border-2 border-border/50 rounded-xl px-4 py-3.5
+           text-text placeholder-muted/50 focus:outline-none
+           focus:border-primary focus:ring-4 focus:ring-primary/10
+           transition-all duration-200 font-medium;
   }
 
   .ball-dot {
-    @apply w-9 h-9 rounded-full flex items-center justify-center
-           text-xs font-bold border border-[#30363d] font-display;
+    @apply w-10 min-w-[2.5rem] h-10 rounded-full flex items-center justify-center
+           text-xs font-black border-2 border-border/50 font-display transition-all;
   }
 }
 
