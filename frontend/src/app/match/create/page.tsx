@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import withAuth from '@/components/withAuth';
@@ -13,6 +13,16 @@ import { useToast } from '@/components/providers/ToastProvider';
 import { cn } from '@/lib/utils';
 
 const OVERS_OPTIONS = [5, 10, 15, 20];
+const MIN_OVERS = 1;
+const MAX_OVERS = 50;
+
+function parseInteger(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || !Number.isInteger(n)) return null;
+  return n;
+}
 
 function CreateMatchPage() {
   const router = useRouter();
@@ -21,13 +31,34 @@ function CreateMatchPage() {
   const [teamAId, setTeamAId] = useState('');
   const [teamBId, setTeamBId] = useState('');
   const [totalOvers, setTotalOvers] = useState(10);
+  const [isCustomOvers, setIsCustomOvers] = useState(false);
+  const [customOvers, setCustomOvers] = useState('');
   const [tossWinnerTeamId, setTossWinnerTeamId] = useState('');
   const [tossDecision, setTossDecision] = useState<'BAT' | 'BOWL'>('BAT');
   const [loading, setLoading] = useState(false);
+  const customOversRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     teamsApi.getAll().then(({ data }) => setTeams(data));
   }, []);
+
+  useEffect(() => {
+    if (!isCustomOvers) return;
+    const id = window.requestAnimationFrame(() => customOversRef.current?.focus());
+    return () => window.cancelAnimationFrame(id);
+  }, [isCustomOvers]);
+
+  const effectiveTotalOvers = useMemo(() => {
+    if (!isCustomOvers) return totalOvers;
+    return parseInteger(customOvers);
+  }, [customOvers, isCustomOvers, totalOvers]);
+
+  const oversError = useMemo(() => {
+    if (effectiveTotalOvers == null) return 'Enter overs';
+    if (effectiveTotalOvers < MIN_OVERS) return `Minimum ${MIN_OVERS} over`;
+    if (effectiveTotalOvers > MAX_OVERS) return `Maximum ${MAX_OVERS} overs`;
+    return null;
+  }, [effectiveTotalOvers]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,12 +70,16 @@ function CreateMatchPage() {
       toast('Toss winner must be Team A or Team B.', 'error');
       return;
     }
+    if (oversError) {
+      toast('Please enter a valid match overs value.', 'error');
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await matchesApi.create({
         teamAId: Number(teamAId),
         teamBId: Number(teamBId),
-        totalOvers,
+        totalOvers: effectiveTotalOvers!,
         tossWinnerTeamId: tossWinnerTeamId ? Number(tossWinnerTeamId) : null,
         tossDecision: tossWinnerTeamId ? tossDecision : null,
       });
@@ -120,18 +155,21 @@ function CreateMatchPage() {
             <div className="flex items-center justify-between">
                <h2 className="font-display text-xl font-black text-text uppercase tracking-widest">Match Overs</h2>
                <div className="px-3 py-1 bg-primary/10 rounded-full text-[10px] font-black text-primary uppercase tracking-widest">
-                  {totalOvers * 6} BALLS
+                  {effectiveTotalOvers != null && !oversError ? `${effectiveTotalOvers * 6} BALLS` : '-- BALLS'}
                </div>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
               {OVERS_OPTIONS.map((o) => (
                 <button
                   key={o}
                   type="button"
-                  onClick={() => setTotalOvers(o)}
+                  onClick={() => {
+                    setIsCustomOvers(false);
+                    setTotalOvers(o);
+                  }}
                   className={cn(
                     "py-5 rounded-2xl border-2 font-display text-2xl font-black transition-all duration-300 transform active:scale-95",
-                    totalOvers === o
+                    !isCustomOvers && totalOvers === o
                       ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 -translate-y-1"
                       : "bg-muted/5 border-border/50 text-muted hover:border-primary/30 hover:text-text"
                   )}
@@ -139,7 +177,40 @@ function CreateMatchPage() {
                   {o}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCustomOvers(true);
+                  setCustomOvers((prev) => (prev.trim() ? prev : String(totalOvers)));
+                }}
+                className={cn(
+                  "py-5 rounded-2xl border-2 font-display text-lg font-black transition-all duration-300 transform active:scale-95",
+                  isCustomOvers
+                    ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 -translate-y-1"
+                    : "bg-muted/5 border-border/50 text-muted hover:border-primary/30 hover:text-text"
+                )}
+              >
+                Custom
+              </button>
             </div>
+
+            {isCustomOvers && (
+              <div className="pt-2">
+                <Input
+                  ref={customOversRef}
+                  label={`Custom Overs (${MIN_OVERS}–${MAX_OVERS})`}
+                  type="number"
+                  inputMode="numeric"
+                  min={MIN_OVERS}
+                  max={MAX_OVERS}
+                  step={1}
+                  value={customOvers}
+                  onChange={(e) => setCustomOvers(e.target.value)}
+                  error={oversError ?? undefined}
+                  placeholder="e.g. 7"
+                />
+              </div>
+            )}
           </Card>
 
           {/* Toss */}
@@ -188,7 +259,7 @@ function CreateMatchPage() {
           <Button
             type="submit"
             isLoading={loading}
-            disabled={teams.length < 2}
+            disabled={teams.length < 2 || !!oversError}
             className="w-full py-6 text-xl font-black uppercase tracking-[0.3em] shadow-2xl shadow-primary/20"
           >
             Start Match ⚡

@@ -21,6 +21,11 @@ public class MatchService {
     private final PlayerRepository playerRepository;
 
     public MatchDto.MatchResponse createMatch(MatchDto.CreateMatchRequest request) {
+        if (request.getTotalOvers() == null) throw new RuntimeException("totalOvers is required");
+        if (request.getTotalOvers() < 1 || request.getTotalOvers() > 50) {
+            throw new RuntimeException("totalOvers must be between 1 and 50");
+        }
+
         Team teamA = teamRepository.findById(request.getTeamAId())
                 .orElseThrow(() -> new RuntimeException("Team A not found"));
         Team teamB = teamRepository.findById(request.getTeamBId())
