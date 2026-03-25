@@ -1,6 +1,7 @@
 package com.cricket.dto;
 
 import lombok.Data;
+import java.util.Map;
 import java.util.List;
 
 public class MatchDto {
@@ -66,6 +67,28 @@ public class MatchDto {
     }
 
     @Data
+    public static class BallDetailResponse {
+        private Long id;
+        private Integer inningsNumber;
+        private Integer overNumber;
+        private Integer ballNumber;
+        private Integer runs; // total
+        private Integer batRuns;
+        private Integer extraRuns;
+        private String extraType;
+        private Boolean isWicket;
+        private Long batsmanId;
+        private String batsmanName;
+        private Long bowlerId;
+        private String bowlerName;
+        private String wicketType;
+        private Long wicketBatsmanId;
+        private String wicketBatsmanName;
+        private Long fielderId;
+        private String fielderName;
+    }
+
+    @Data
     public static class BatterLine {
         private Long playerId;
         private String name;
@@ -113,6 +136,8 @@ public class MatchDto {
         private Integer remainingBalls;
         private String resultText;
         private String status;
+        private Integer extrasTotal;
+        private Map<String, Integer> extrasBreakdown;
         private List<BallResponse> lastSixBalls;
         private List<BatterLine> battingCard;
         private List<BowlerLine> bowlingCard;

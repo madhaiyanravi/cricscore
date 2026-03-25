@@ -85,12 +85,16 @@ export const scoreApi = {
     newBatsmanId?: number | null;
   }) => api.post('/score/ball', payload),
   getScore: (matchId: number) => api.get(`/score/${matchId}`),
+  getBalls: (matchId: number, inningsNumber?: number) =>
+    api.get(`/score/${matchId}/balls`, { params: inningsNumber ? { inningsNumber } : {} }),
   undoBall:  (matchId: number) => api.delete(`/score/ball/last/${matchId}`),
 };
 
 export const publicScoreApi = {
   getScore: (matchId: number, token: string) =>
     publicApi.get(`/public/score/${matchId}`, { params: { t: token } }),
+  getBalls: (matchId: number, token: string, inningsNumber?: number) =>
+    publicApi.get(`/public/score/${matchId}/balls`, { params: { t: token, ...(inningsNumber ? { inningsNumber } : {}) } }),
 };
 
 // ── Players ───────────────────────────────────────────────────────────────────

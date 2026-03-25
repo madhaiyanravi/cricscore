@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { publicScoreApi } from '@/lib/api';
-import { ScoreData } from '@/types';
+import { BallDetail, ScoreData } from '@/types';
 
 export default function LiveMatchPage() {
   const params = useParams();
@@ -12,6 +12,7 @@ export default function LiveMatchPage() {
   const token = searchParams.get('t') || '';
 
   const [score, setScore] = useState<ScoreData | null>(null);
+  const [balls, setBalls] = useState<BallDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -24,6 +25,12 @@ export default function LiveMatchPage() {
     try {
       const { data } = await publicScoreApi.getScore(matchId, token);
       setScore(data);
+      try {
+        const ballsResp = await publicScoreApi.getBalls(matchId, token, data.inningsNumber);
+        setBalls(ballsResp.data);
+      } catch {
+        // ignore ball-by-ball errors for spectator view
+      }
       setError('');
     } catch (e: any) {
       setError(e.response?.status === 401 ? 'Invalid or expired link' : 'Failed to load live score');
@@ -112,6 +119,47 @@ export default function LiveMatchPage() {
               <span className="text-white font-semibold">{score.currentBowlerName || '—'}</span>
             </div>
           </div>
+        </div>
+
+        <div className="card p-6">
+          <h2 className="font-display text-lg font-semibold text-white mb-3">Recent balls</h2>
+          {balls.length === 0 ? (
+            <p className="text-sm text-gray-500">No balls yet</p>
+          ) : (
+            <div className="space-y-2">
+              {balls.slice(Math.max(0, balls.length - 12)).map((b) => {
+                const overBall = `${(b.overNumber ?? 0) + 1}.${b.ballNumber ?? 0}`;
+                const isExtra = Boolean(b.extraType);
+                const label =
+                  b.isWicket
+                    ? 'W'
+                    : !isExtra
+                      ? String(b.batRuns)
+                      : b.extraType === 'WIDE'
+                        ? `Wd ${b.extraRuns}`
+                        : b.extraType === 'NO_BALL'
+                          ? `NB +${b.batRuns}`
+                          : `${b.extraType?.replace('_', ' ')} ${b.extraRuns}`;
+                return (
+                  <div key={b.id} className="flex items-center justify-between gap-3 bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2">
+                    <p className="text-sm text-gray-200 min-w-0 truncate">
+                      <span className="text-gray-500 mr-2">{overBall}</span>
+                      {b.batsmanName || '—'} vs {b.bowlerName || '—'}
+                    </p>
+                    <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded-full border ${
+                      b.isWicket
+                        ? 'bg-red-600/20 border-red-500/40 text-red-300'
+                        : isExtra
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                          : 'bg-white/5 border-white/10 text-gray-200'
+                    }`}>
+                      {label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </main>
     </>

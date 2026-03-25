@@ -31,6 +31,27 @@ export interface BallResult {
   fielderId?: number | null;
 }
 
+export interface BallDetail {
+  id: number;
+  inningsNumber: number;
+  overNumber: number;
+  ballNumber: number;
+  runs: number;
+  batRuns: number;
+  extraRuns: number;
+  extraType: string | null;
+  isWicket: boolean;
+  batsmanId?: number | null;
+  batsmanName?: string | null;
+  bowlerId?: number | null;
+  bowlerName?: string | null;
+  wicketType?: string | null;
+  wicketBatsmanId?: number | null;
+  wicketBatsmanName?: string | null;
+  fielderId?: number | null;
+  fielderName?: string | null;
+}
+
 export interface BatterLine {
   playerId: number;
   name: string;
@@ -76,6 +97,8 @@ export interface ScoreData {
   remainingBalls?: number | null;
   resultText?: string | null;
   status: 'IN_PROGRESS' | 'COMPLETED';
+  extrasTotal?: number | null;
+  extrasBreakdown?: Record<string, number> | null;
   lastSixBalls: BallResult[];
   battingCard?: BatterLine[];
   bowlingCard?: BowlerLine[];

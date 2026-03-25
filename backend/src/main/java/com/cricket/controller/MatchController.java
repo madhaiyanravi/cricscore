@@ -57,4 +57,12 @@ public class MatchController {
     public ResponseEntity<MatchDto.ScoreResponse> getScore(@PathVariable Long matchId) {
         return ResponseEntity.ok(matchService.getScore(matchId));
     }
+
+    @GetMapping("/score/{matchId}/balls")
+    public ResponseEntity<List<MatchDto.BallDetailResponse>> getBallByBall(
+            @PathVariable Long matchId,
+            @RequestParam(name = "inningsNumber", required = false) Integer inningsNumber
+    ) {
+        return ResponseEntity.ok(matchService.getBallByBall(matchId, inningsNumber));
+    }
 }

@@ -242,6 +242,36 @@ public class MatchService {
         return buildScoreResponse(match, innings, false);
     }
 
+    public List<MatchDto.BallDetailResponse> getBallByBall(Long matchId, Integer inningsNumber) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Match not found"));
+
+        int inn = resolveInningsNumber(matchId, inningsNumber);
+        List<Ball> balls = ballRepository.findByMatchIdAndInningsNumberOrderByIdAsc(matchId, inn);
+        return balls.stream().map(b -> {
+            MatchDto.BallDetailResponse r = new MatchDto.BallDetailResponse();
+            r.setId(b.getId());
+            r.setInningsNumber(b.getInningsNumber());
+            r.setOverNumber(b.getOverNumber());
+            r.setBallNumber(b.getBallNumber());
+            r.setRuns(b.getRuns());
+            r.setBatRuns(b.getBatRuns());
+            r.setExtraRuns(b.getExtraRuns());
+            r.setExtraType(b.getExtraType());
+            r.setIsWicket(b.getIsWicket());
+            r.setBatsmanId(b.getBatsmanId());
+            r.setBatsmanName(resolvePlayerName(b.getBatsmanId()));
+            r.setBowlerId(b.getBowlerId());
+            r.setBowlerName(resolvePlayerName(b.getBowlerId()));
+            r.setWicketType(b.getWicketType());
+            r.setWicketBatsmanId(b.getWicketBatsmanId());
+            r.setWicketBatsmanName(resolvePlayerName(b.getWicketBatsmanId()));
+            r.setFielderId(b.getFielderId());
+            r.setFielderName(resolvePlayerName(b.getFielderId()));
+            return r;
+        }).collect(Collectors.toList());
+    }
+
     private MatchDto.ScoreResponse buildScoreResponse(Match match, Innings innings, boolean overEnded) {
         MatchDto.ScoreResponse response = new MatchDto.ScoreResponse();
         response.setMatchId(match.getId());
@@ -296,6 +326,9 @@ public class MatchService {
         }).collect(Collectors.toList()));
 
         List<Ball> balls = ballRepository.findByMatchIdAndInningsNumberOrderByOverNumberAscBallNumberAsc(match.getId(), innings.getInningsNumber());
+        ExtrasSummary extrasSummary = computeExtras(balls);
+        response.setExtrasTotal(extrasSummary.total);
+        response.setExtrasBreakdown(extrasSummary.breakdown);
         response.setBattingCard(buildBattingCard(balls));
         response.setBowlingCard(buildBowlingCard(balls));
         response.setOverEnded(overEnded);
@@ -479,11 +512,45 @@ public class MatchService {
         }
     }
 
+    private int resolveInningsNumber(Long matchId, Integer requested) {
+        if (requested != null && (requested == 1 || requested == 2)) return requested;
+        Optional<Innings> active = inningsRepository.findByMatchIdAndStatus(matchId, "IN_PROGRESS");
+        if (active.isPresent()) return active.get().getInningsNumber();
+        return inningsRepository.findByMatchIdOrderByInningsNumberAsc(matchId).stream()
+                .reduce((a, b) -> b)
+                .map(Innings::getInningsNumber)
+                .orElse(1);
+    }
+
+    private ExtrasSummary computeExtras(List<Ball> balls) {
+        Map<String, Integer> breakdown = new LinkedHashMap<>();
+        breakdown.put("WIDE", 0);
+        breakdown.put("NO_BALL", 0);
+        breakdown.put("BYE", 0);
+        breakdown.put("LEG_BYE", 0);
+        breakdown.put("PENALTY", 0);
+        int total = 0;
+        for (Ball b : balls) {
+            if (b.getExtraType() == null) continue;
+            int extra = Math.max(0, b.getExtraRuns() != null ? b.getExtraRuns() : 0);
+            total += extra;
+            breakdown.put(b.getExtraType(), breakdown.getOrDefault(b.getExtraType(), 0) + extra);
+        }
+        ExtrasSummary s = new ExtrasSummary();
+        s.total = total;
+        s.breakdown = breakdown;
+        return s;
+    }
+
     private static class BowlerAgg {
         int legalBalls = 0;
         int runs = 0;
         int wickets = 0;
         Map<Integer, Integer> overRuns = new TreeMap<>();
     }
-}
 
+    private static class ExtrasSummary {
+        int total;
+        Map<String, Integer> breakdown;
+    }
+}
