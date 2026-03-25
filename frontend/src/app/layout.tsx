@@ -3,6 +3,7 @@ import { Teko, Inter } from 'next/font/google';
 import './globals.css';
 import InstallBanner from '@/components/InstallBanner';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { ToastProvider } from '@/components/providers/ToastProvider';
 
 const teko = Teko({
   subsets: ['latin'],
@@ -34,8 +35,7 @@ export const metadata: Metadata = {
   },
 };
 
-import { ThemeProvider } from '@/components/providers/ThemeProvider';
-import { ToastProvider } from '@/components/providers/ToastProvider';
+
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
