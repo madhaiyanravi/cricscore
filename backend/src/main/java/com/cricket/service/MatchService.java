@@ -2,6 +2,7 @@ package com.cricket.service;
 
 import com.cricket.dto.MatchDto;
 import com.cricket.entity.*;
+import com.cricket.rules.InningsRules;
 import com.cricket.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -257,7 +258,8 @@ public class MatchService {
         }
 
         // Wicket replacement
-        if (Boolean.TRUE.equals(ball.getIsWicket()) && innings.getWickets() < 10) {
+        int allOutWickets = allOutWicketsForTeam(innings.getBattingTeam());
+        if (Boolean.TRUE.equals(ball.getIsWicket()) && innings.getWickets() < allOutWickets) {
             if (request.getNewBatsmanId() == null) throw new RuntimeException("Select new batsman");
             Long outId = request.getWicketBatsmanId() != null ? request.getWicketBatsmanId() : ball.getBatsmanId();
             if (outId != null && outId.equals(innings.getStrikerId())) {
@@ -279,7 +281,7 @@ public class MatchService {
 
         // Innings completion
         int maxBalls = match.getTotalOvers() * 6;
-        boolean inningsCompleted = innings.getWickets() >= 10 || innings.getBallsBowled() >= maxBalls;
+        boolean inningsCompleted = innings.getWickets() >= allOutWickets || innings.getBallsBowled() >= maxBalls;
 
         if (innings.getInningsNumber() == 2 && innings.getTargetRuns() != null) {
             if (innings.getRuns() >= innings.getTargetRuns()) inningsCompleted = true;
@@ -435,6 +437,11 @@ public class MatchService {
         return t.toUpperCase(Locale.ROOT);
     }
 
+    private int allOutWicketsForTeam(Team team) {
+        int totalPlayers = team != null && team.getPlayers() != null ? team.getPlayers().size() : 0;
+        return InningsRules.allOutWickets(totalPlayers);
+    }
+
     private boolean isLegalDelivery(String extraType) {
         if (extraType == null) return true;
         return Set.of("BYE", "LEG_BYE").contains(extraType);
@@ -566,7 +573,7 @@ public class MatchService {
         match.setStatus("COMPLETED");
         if (inn2.getRuns() >= target) {
             match.setWinnerTeamId(chasing.getId());
-            int wktsRemaining = Math.max(0, 10 - inn2.getWickets());
+            int wktsRemaining = Math.max(0, allOutWicketsForTeam(chasing) - inn2.getWickets());
             match.setResultText(chasing.getName() + " won by " + wktsRemaining + " wickets");
         } else if (inn2.getRuns() == target - 1) {
             match.setWinnerTeamId(null);

@@ -303,10 +303,13 @@ function MatchPage() {
   const [oversFull, oversPartial] = score.overs.split('.');
   const legalBalls = parseInt(oversFull) * 6 + parseInt(oversPartial || '0');
   const runRate = legalBalls > 0 ? (score.runs / (legalBalls / 6)).toFixed(2) : '0.00';
+  const totalTeamPlayers = battingPlayers.length > 0 ? battingPlayers.length : 11;
+  const allOutWickets = Math.max(0, totalTeamPlayers - 1);
   const showStart2nd =
     score.status === 'IN_PROGRESS' &&
     score.inningsNumber === 1 &&
-    (score.remainingBalls === 0 || score.wickets >= 10);
+    (score.remainingBalls === 0 || score.wickets >= allOutWickets);
+  const needsIncomingBatsman = score.wickets + 1 < allOutWickets;
 
   return (
     <div className="min-h-screen bg-background text-text transition-colors duration-200">
@@ -781,7 +784,14 @@ function MatchPage() {
           onClose={() => setShowWicket(false)}
           title="⚡ Wicket Confirmation"
         >
-           <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); recordBall(0, true); }}>
+           <form className="space-y-6" onSubmit={(e) => {
+             e.preventDefault();
+             if (needsIncomingBatsman && !newBatsmanId) {
+               setError('Select incoming batsman');
+               return;
+             }
+             recordBall(0, true);
+           }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                  <Select
                     label="Method of Dismissal"
@@ -810,15 +820,17 @@ function MatchPage() {
                       ...bowlingPlayers.map(p => ({ label: p.name, value: String(p.id) }))
                     ]}
                  />
-                 <Select
-                    label="Incoming Batsman"
-                    value={newBatsmanId}
-                    onChange={(e) => setNewBatsmanId(e.target.value ? Number(e.target.value) : '')}
-                    options={[
-                      { label: 'Select Incoming', value: '' },
-                      ...battingPlayers.filter(p => !score.battingCard?.find(bc => bc.playerId === p.id)).map(p => ({ label: p.name, value: String(p.id) }))
-                    ]}
-                 />
+                 {needsIncomingBatsman && (
+                   <Select
+                      label="Incoming Batsman"
+                      value={newBatsmanId}
+                      onChange={(e) => setNewBatsmanId(e.target.value ? Number(e.target.value) : '')}
+                      options={[
+                        { label: 'Select Incoming', value: '' },
+                        ...battingPlayers.filter(p => !score.battingCard?.find(bc => bc.playerId === p.id)).map(p => ({ label: p.name, value: String(p.id) }))
+                      ]}
+                   />
+                 )}
               </div>
 
               <div className="flex gap-4 pt-4">
